@@ -1,0 +1,891 @@
+{
+  "name": "Content Automation Project Plan - Scheduled Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "d3810153-e0b3-4e17-a926-91a8811ac551",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1536,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1248,
+        352
+      ],
+      "id": "c418a53f-c7f0-4057-9ade-db4e793eb785",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "V2ReYQHbylCT0cil",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Topic: {{$json.topic || \"child screen time addiction\"}}\n\nCreate the content brief based on this topic.",
+        "options": {
+          "systemMessage": "=You are a content strategy assistant inside an n8n automation workflow.\n\nYour job is to take one raw topic and turn it into a structured content brief for social media content automation.\n\nTopic: {{ $json.topic || \"child screen time addiction\" }}\n\nCreate a structured content brief with the following fields:\n\n1. topic\n2. target_audience\n3. core_problem\n4. content_angle\n5. desired_outcome\n6. emotional_triggers\n7. key_questions_the_audience_has\n8. platform_fit_notes\n9. CTA_goal\n\nRules:\n- Make the brief specific, practical, and audience-aware.\n- Focus on parents of children struggling with screen addiction.\n- Keep the tone useful, clear, and modern.\n- Do not write full captions or scripts yet.\n- Do not be generic.\n- Make the output strong enough for later hook generation.\n\nReturn ONLY valid JSON in this format:\n\n{\n  \"topic\": \"\",\n  \"target_audience\": \"\",\n  \"core_problem\": \"\",\n  \"content_angle\": \"\",\n  \"desired_outcome\": \"\",\n  \"emotional_triggers\": [],\n  \"key_questions_the_audience_has\": [],\n  \"platform_fit_notes\": {\n    \"instagram\": \"\",\n    \"threads\": \"\",\n    \"whop\": \"\"\n  },\n  \"CTA_goal\": \"\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1312,
+        128
+      ],
+      "id": "dff26e4b-2b4e-482c-b643-5d829d36370d",
+      "name": "Content creator"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Use this content brief to generate hooks:\n {{ $json.output }}",
+        "options": {
+          "systemMessage": "=You are a hook generation assistant inside an n8n content automation workflow.\n\nUsing the structured content brief below, generate 10 strong hooks for social media content.\n\nContent Brief:\n{{ $json.output }}\nRequirements:\n- Hooks must be specific to the topic.\n- Hooks must feel relevant to parents dealing with child screen time addiction.\n- Use a mix of:\n  - pain points\n  - curiosity gaps\n  - mistakes\n  - warnings\n  - strong opinions\n  - transformations\n- Hooks must be strong enough to support both carousel and short video content.\n- Avoid generic wording.\n\nScore each hook from 1 to 10 based on strength and relevance.\n\nReturn ONLY valid JSON in this format:\n\n{\n  \"hooks\": [\n    {\n      \"hook\": \"\",\n      \"type\": \"\",\n      \"score\": 0\n    }\n  ],\n  \"top_3_hooks\": [\n    \"\",\n    \"\",\n    \"\"\n  ]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -960,
+        128
+      ],
+      "id": "d7480c33-1fd1-40d4-b09e-9144b086c678",
+      "name": "hook creator"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -896,
+        352
+      ],
+      "id": "127f298a-d70e-4fdf-a95f-bc72c442e3e2",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "V2ReYQHbylCT0cil",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "=Authorization",
+              "value": "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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"{{$json.selected_hook}}\",\n  \"search_depth\": \"advanced\",\n  \"include_answer\": true,\n  \"max_results\": 3\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -416,
+        128
+      ],
+      "id": "4743b856-1db2-443e-964d-d1707dca12f6",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = JSON.parse($json.output);\n\nreturn [\n  {\n    json: {\n      selected_hook: parsed.top_3_hooks[0]\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        128
+      ],
+      "id": "03c39f8c-4125-4276-97a4-d572dc184db8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -96,
+        352
+      ],
+      "id": "ffc00d6b-11af-438f-a794-52857c744d0b",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "V2ReYQHbylCT0cil",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        352
+      ],
+      "id": "34978645-0239-4761-aa4a-4ff333d934eb",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "V2ReYQHbylCT0cil",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here are search results collected from the web:\n{{ JSON.stringify($json, null, 2) }}\n\nSummarize the research and extract the most useful insights.",
+        "options": {
+          "systemMessage": "You are a research assistant in an automated content creation workflow.\n\nYour job is to read web search results and extract useful research insights for social media content.\n\nFocus on:\n- key insights\n- statistics or facts\n- examples or case studies\n- expert advice\n- practical tips\n\nRules:\n- remove duplicate or weak information\n- keep the insights short and clear\n- keep only useful information for content creation\n\nReturn the result in this JSON format:\n\n{\n  \"research_summary\": \"\",\n  \"key_insights\": [],\n  \"statistics_or_facts\": [],\n  \"examples\": [],\n  \"practical_tips\": []\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -160,
+        128
+      ],
+      "id": "02d628d5-cd2a-45da-a00a-573002f3f5a3",
+      "name": "Content Sumarizer"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Using the research summary below, create a short-form social media script. {{ $json.output }}",
+        "options": {
+          "systemMessage": "Write three different script variations based on the research.\nEach script should use a different hook and slightly different angle.\n\nReturn only valid JSON in this format:\n\n{\n  \"scripts\": [\n    {\n      \"hook\": \"\",\n      \"problem\": \"\",\n      \"insight\": \"\",\n      \"example_or_proof\": \"\",\n      \"actionable_takeaway\": \"\",\n      \"cta\": \"\"\n    },\n    {\n      \"hook\": \"\",\n      \"problem\": \"\",\n      \"insight\": \"\",\n      \"example_or_proof\": \"\",\n      \"actionable_takeaway\": \"\",\n      \"cta\": \"\"\n    },\n    {\n      \"hook\": \"\",\n      \"problem\": \"\",\n      \"insight\": \"\",\n      \"example_or_proof\": \"\",\n      \"actionable_takeaway\": \"\",\n      \"cta\": \"\"\n    }\n  ]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        192,
+        128
+      ],
+      "id": "008fb40b-a27b-4d8c-ba1b-d11bf9c143c0",
+      "name": "Script Writer"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = JSON.parse($json.output);\n\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        128
+      ],
+      "id": "747a9ab2-5672-4d95-ba5e-3739cc64cd8a",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        -80
+      ],
+      "id": "44d56cd3-7fdc-429c-b90e-db340f7f170a",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "V2ReYQHbylCT0cil",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "CONTENT STRATEGY STAGE\n\nPurpose:\nGenerate the core content direction for the day.\n\nSteps:\n1. Topic is triggered by the schedule.\n2. AI Content Creator defines the content brief:\n   - audience\n   - angle\n   - problem\n   - desired outcome\n3. Hook Creator generates 5–10 strong hooks.\n4. Best hooks are passed to the research layer.\n\nGoal:\nEnsure every content piece starts with a strong hook and clear topic.",
+        "height": 512,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1344,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "9793aa3e-e47b-4c9e-82ae-1259ffaf623b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "RESEARCH & SCRIPT GENERATION\n\nPurpose:\nTurn the selected hook into a well-informed script.\n\nSteps:\n1. Code node extracts the selected hook.\n2. Tavily API performs real-time web research.\n3. Content Summarizer filters and condenses research insights.\n4. Script Writer converts research into a structured script:\n   - Hook\n   - Problem\n   - Insight\n   - Example\n   - Takeaway\n   - CTA\n\nOutput:\nThree script variations for testing different angles.",
+        "height": 528,
+        "width": 656
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -208,
+        -288
+      ],
+      "typeVersion": 1,
+      "id": "5419b435-6b3a-4de4-bc6e-5e0ca9714cb6",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        352
+      ],
+      "id": "4060f12d-94f2-4cea-b71c-18084ff2e884",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "V2ReYQHbylCT0cil",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Convert the following script into an Instagram carousel with 7 slides.\n\nUse the structure defined in the system instructions.\nConvert the following script into Instagram carousel content.\n\nScript:\n\nScript:      \n {{ $json.scripts[0] }}",
+        "options": {
+          "systemMessage": "You are an Instagram content creator.\n\nYour job is to convert one content script into:\n1. an Instagram carousel with 7 slides\n2. an Instagram carousel caption\n3. a carousel design prompt for visual generation\n\nRules:\n- The carousel must be clear, emotional, and easy to read.\n- Keep each slide short: 1 to 2 sentences maximum.\n- Slide structure:\n  Slide 1: strong hook/title\n  Slide 2: problem\n  Slide 3: insight\n  Slide 4: example or proof\n  Slide 5: practical takeaway\n  Slide 6: action step\n  Slide 7: CTA\n- The caption should have a strong opening line, helpful tone, and clear CTA.\n- The design prompt should describe the visual style for the carousel, including mood, colors, layout, and illustration/design direction.\n- Write for parents concerned about child screen time addiction.\n\nReturn only valid JSON in this format:\n\n{\n  \"carousel\": {\n    \"slide1\": \"\",\n    \"slide2\": \"\",\n    \"slide3\": \"\",\n    \"slide4\": \"\",\n    \"slide5\": \"\",\n    \"slide6\": \"\",\n    \"slide7\": \"\"\n  },\n  \"instagram_caption\": \"\",\n  \"carousel_design_prompt\": \"\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        768,
+        -272
+      ],
+      "id": "94b5b0ce-cec8-40cf-8b10-820ba89374b6",
+      "name": "Instagram Carousel agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Convert the following script into a Threads content.\n\nScript:  {{ $json.scripts[1] }}",
+        "options": {
+          "systemMessage": "You are a Threads content creator.\n\nYour job is to convert one content script into:\n1. a Threads post\n2. a Threads CTA\n3. a visual prompt if a simple supporting graphic is needed\n\nRules:\n- The tone must feel conversational, natural, fast-moving, and slightly opinionated.\n- Do not write like Instagram.\n- Do not use slide format.\n- Make it easy to skim.\n- End with a line that invites replies, discussion, or reflection.\n- The visual prompt should describe a simple supporting graphic if needed, not a full carousel.\n- Write for parents concerned about child screen time addiction.\n\nReturn only valid JSON in this format:\n\n{\n  \"threads_post\": \"\",\n  \"threads_cta\": \"\",\n  \"threads_visual_prompt\": \"\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        768,
+        128
+      ],
+      "id": "e88ada02-b7c3-4924-9a8b-ba2902bb9afd",
+      "name": "Threads post agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Convert the following script into a Whop post and caption.\n\nScript:  {{ $json.scripts[2] }}",
+        "options": {
+          "systemMessage": "You are a Whop content creator.\n\nYour job is to convert one content script into:\n1. a Whop post\n2. a Whop caption\n3. a short video prompt/storyboard for content creation\n4. a strong CTA for community engagement, offer, or action\n\nRules:\n- The tone must be direct, practical, and action-focused.\n- Make it feel useful and community-driven.\n- The video prompt should include a short concept, scene direction, and content angle.\n- Do not use slide format.\n- Write for parents concerned about child screen time addiction.\n\nReturn only valid JSON in this format:\n\n{\n  \"whop_post\": \"\",\n  \"whop_caption\": \"\",\n  \"whop_video_prompt\": \"\",\n  \"whop_cta\": \"\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        768,
+        512
+      ],
+      "id": "c3b73a64-62a6-431d-aea6-88b67a6b3e1a",
+      "name": "Whop content agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        704
+      ],
+      "id": "83365873-b92d-435e-b94b-5a739b4a9eb7",
+      "name": "OpenAI Chat Model6",
+      "credentials": {
+        "openAiApi": {
+          "id": "V2ReYQHbylCT0cil",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output;\n\n// convert the string into an object\nconst parsed = JSON.parse(raw);\n\n// return it properly as an object\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -272
+      ],
+      "id": "bf424771-626e-45b9-a83c-aed7bd361875",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output;\n\n// convert the string into an object\nconst parsed = JSON.parse(raw);\n\n// return it properly as an object\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        128
+      ],
+      "id": "9ba33661-6ed6-4562-b161-e76e3d2755a3",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output;\n\n// convert the string into an object\nconst parsed = JSON.parse(raw);\n\n// return it properly as an object\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        512
+      ],
+      "id": "98ef0c15-c439-46c0-b86f-1a8aff66fede",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1488,
+        144
+      ],
+      "id": "96bb1865-4f0d-4b7c-904d-a8f2b902bdcf",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "NjwTGACaosDv42Tp",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Content creator": [
+      {
+        "json": {
+          "output": "{\n  \"topic\": \"Child screen time addiction (ages 4–14)\",\n  \"target_audience\": \"Primary caregivers and parents of children aged ~4–14 who are worried about compulsive device use — working parents, single parents, and parents who have tried rules that result in meltdowns or secretive behavior.\",\n  \"core_problem\": \"Children are showing compulsive, conflict-heavy screen use: tantrums when devices are taken away, late-night gaming/scrolling, falling grades or attention drops, loss of interest in offline play and family time. Parents feel guilty, overwhelmed, and unsure which rules actually work long-term without damaging the parent-child relationship.\",\n  \"content_angle\": \"Practical, non-shaming, behavior-first micro-strategies that fit busy family life: short experiments (3–7 day resets), easy environmental fixes (charger locations, Wi‑Fi schedules), specific tech tactics (iOS Screen Time, Family Link, router schedules, app timers), and scripts for calm boundary-setting. Emphasize quick wins that reduce conflict and restore routines rather than punitive bans.\",\n  \"desired_outcome\": \"Parents can implement 3–5 concrete changes in the next week to reduce compulsive screen behavior, restore better sleep and family routines, reduce daily fights, and feel confident maintaining boundaries without escalating conflict.\",\n  \"emotional_triggers\": [\n    \"Guilt about letting screens replace parenting time\",\n    \"Fear that their child is falling behind socially or academically\",\n    \"Shame or judgement from other parents/teachers\",\n    \"Frustration from daily battles and tantrums\",\n    \"Relief and hope at the idea of small, practical fixes\"\n  ],\n  \"key_questions_the_audience_has\": [\n    \"How do I set limits without daily meltdowns?\",\n    \"What is an age-appropriate daily screen allowance for my child?\",\n    \"How do I separate school/learning screens from entertainment?\",\n    \"Which parental controls actually work (and how do I set them)?\",\n    \"What are quick replacement activities that a child will accept?\",\n    \"How do I handle sleep problems caused by evening screen use?\",\n    \"When is this a clinical addiction that needs professional help?\",\n    \"How do I avoid being a hypocrite (parents on phones at dinner)?\",\n    \"How do I stop my child from hiding or sneaking devices?\",\n    \"How can I make rules that stick with minimal enforcement?\"\n  ],\n  \"platform_fit_notes\": {\n    \"instagram\": \"Use short Reels (20–45s) showing 1 concrete tactic (e.g., ‘Move chargers out of bedrooms’) with a before/after hook; carousels that walk through a 3-step evening routine; saveable checklist images (‘5 quick swaps to stop bedtime scrolling’). Use captions for a 7-day challenge CTA and link to bio for the downloadable kit.\",\n    \"threads\": \"Post a daily micro-tip thread or 5-tweet thread with a quick experiment (Day 1: charger relocation; Day 2: app timers). Use rapid Q&A replies to build trust and run polls (e.g., biggest screen-time pain point). Keep tone conversational and offer one-line scripts parents can copy.\",\n    \"whop\": \"Package a low-cost downloadable '7-Day Reset Kit' and habit tracker (PDF + printable tokens + parental scripts) as a paid product or free lead magnet. Offer a subscription micro-course or cohorted 7-day challenge with gated community access, downloadable templates for parental control settings, and a simple onboarding checklist.\"\n  },\n  \"CTA_goal\": \"Get parents to download a free '7-Day Reset Screen Habits' kit (checklist + scripts + habit tracker) and join a short email sequence or community challenge that guides them through 3 concrete changes in the first week.\"\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "hook creator": [
+      {
+        "json": {
+          "output": "{\n  \"hooks\": [\n    {\n      \"hook\": \"Struggling with screen tantrums every time you take the device away? Here’s a 3-day reset that stops the meltdown without the guilt.\",\n      \"type\": \"pain point\",\n      \"score\": 9\n    },\n    {\n      \"hook\": \"Why setting stricter screen time rules might backfire—and what simple tweak can actually work without constant fights.\",\n      \"type\": \"mistake\",\n      \"score\": 8\n    },\n    {\n      \"hook\": \"Move your child’s charger out of their room tonight & watch how their sleep routine transforms in just one week.\",\n      \"type\": \"transformation\",\n      \"score\": 9\n    },\n    {\n      \"hook\": \"Is your child hiding their device or gaming late at night? Here’s a non-shaming way to regain control without breaking trust.\",\n      \"type\": \"pain point\",\n      \"score\": 8\n    },\n    {\n      \"hook\": \"The secret to setting screen time boundaries that stick—even when you’re juggling work, parenting, and exhaustion.\",\n      \"type\": \"curiosity gap\",\n      \"score\": 9\n    },\n    {\n      \"hook\": \"Think an hour of daily screen time is harmless? Why age-appropriate limits matter more than you realize for preventing addiction.\",\n      \"type\": \"warning\",\n      \"score\": 7\n    },\n    {\n      \"hook\": \"Feel guilty every time your kid zones out on screens instead of playing with the family? Try these 3 micro-strategies for calm, quick wins.\",\n      \"type\": \"emotional trigger\",\n      \"score\": 9\n    },\n    {\n      \"hook\": \"How to separate school screens from play screens—plus a tech trick that makes this switch seamless for kids aged 4 to 14.\",\n      \"type\": \"curiosity gap\",\n      \"score\": 8\n    },\n    {\n      \"hook\": \"Tired of power struggles around device use? Use this simple environmental fix today to lower conflict and boost cooperation tomorrow.\",\n      \"type\": \"practical tip\",\n      \"score\": 8\n    },\n    {\n      \"hook\": \"Worried that your child’s screen time is becoming an addiction? Here’s when to consider professional help and what to do first at home.\",\n      \"type\": \"warning\",\n      \"score\": 8\n    }\n  ],\n  \"top_3_hooks\": [\n    \"Struggling with screen tantrums every time you take the device away? Here’s a 3-day reset that stops the meltdown without the guilt.\",\n    \"Move your child’s charger out of their room tonight & watch how their sleep routine transforms in just one week.\",\n    \"The secret to setting screen time boundaries that stick—even when you’re juggling work, parenting, and exhaustion.\"\n  ]\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "HTTP Request": [
+      {
+        "json": {
+          "query": "Struggling with screen tantrums every time you take the device away? Here’s a 3-day reset that stops the meltdown without the guilt.",
+          "follow_up_questions": null,
+          "answer": "To stop screen tantrums, calmly enforce screen limits, and engage children in alternative activities. A 3-7 day screen-free reset can help break dependency. Stay firm and patient during the transition.",
+          "images": [],
+          "results": [
+            {
+              "url": "https://drdunckley.com/reset-your-childs-brain/",
+              "title": "Reset Your Child's Brain - Dr. Victoria Dunckley",
+              "content": "The first couple of days were tricky, as we felt like we had to entertain him a lot more. But I had stocked up on fun coloring books and new toys like Jenga and dominos to offer him anytime he asked for the iPad. We actually didn’t discuss the screen fast with him prior to beginning, as I wanted to avoid a meltdown and thought it would make him focus more on not having the iPad if we made a big to-do about it. Instead I just removed all screens without notice while he slept and anytime he asked for it I told him “not right now” and distracted him with something else to do. [...] Skip to content\n\nVictoria L Dunckley, M.D.  \n\nIntegrative psychiatrist, author and screen time consultant\n\nVictoria L Dunckley, M.D.  \n\nIntegrative psychiatrist, author and screen time consultant\n\n# Reset Your Child’s Brain\n\n### End Meltdowns, Raise Grades, & Boost Social Skills\n\n### by Reversing the Effects of Screen-Time\n\n### “Buy this book!” – iPad and tantrums, Reset experience\n\n#### Amazon Reviewer, MzB, mom of 2 boys, 3 and 7 years old\n\n### “Mind blowing and amazing!” – changes in speech, eye contact, behavior; removed TV \n\n#### C. D., parent of 15 month old boy\n\n### “Get the best version of your child back” – ADHD, depression, OCD \n\n#### Mom of 3, Amazon reviewer\n\n### Screen-Time Testimony – changes in tantrums and play from eliminating age appropriate TV \n\n#### K.K. [...] #### S.M.\n\n### “Buy this book!” – iPad and tantrums, Reset experience\n\nReset Your Child’s Brain has transformed my children in ways I couldn’t have even imagined four weeks ago. I am embarrassed to say that my 3 and 7 year old…\n\nRead More\n\n#### Amazon Reviewer, MzB, mom of 2 boys, 3 and 7 years old\n\n### “Buy this book!” – iPad and tantrums, Reset experience",
+              "score": 0.42849702,
+              "raw_content": null
+            },
+            {
+              "url": "https://kailancarr.com/blogs/screen-free/tips-for-a-successful-screen-time-detox-and-reset?srsltid=AfmBOoo8gdzgaVzn-Ha7KuCp9e6B1aoStc3qvb4s6JN8_1DDhLxze4Oe",
+              "title": "10 Tips for a Successful Screen Time Detox and Reset - Kailan Carr",
+              "content": "Skip to content\n\nEnjoy FREE shipping on orders $50+\n\n ## Currency\n\n\n\n Account\n\n# 10 Tips for a Successful Screen Time Detox and Reset\n\nKailan   Posted on May 25 2021\n\n10 Tips for a Successful Screen Time Detox and Reset\n\nWe just went through a pandemic, so screen time limits likely went sayonara with our social lives.  Every family is different, and every parent out there is navigating their own course.  This is no place for guilt or judgment.\n\nBut maybe you’re ready to get back to a somewhat normal, pre-pandemic state.  School will be out soon, and there won’t be a solid reason to need a screen.\n\nThere actually is a price we pay for the moments of quiet and entertainment screens provide.  The cost could be our children’s loss of creativity, focus, sleep, or happy mood. [...] ## Screens are addicting and overstimulating to your child's still-developing brain.\n\nHave your children become screen zombies that want nothing else?\n\nOr do they whine or become irritable after screen time?\n\nOr do you just want to reel in how much they are spending on screens?\n\n## Then it’s time for a reset so you can get back in control of your tech.\n\nThis doesn’t mean giving up screens forever.  That is unrealistic.  But it is a period of about 3-7 days (or longer) where you go screen-free to reset your children’s brains and bodies – like a detox.  Then you can reintroduce screens where YOU are in control again and you can establish your routine. [...] # 4. Get Out\n\nTry to go somewhere every day.  It takes up time and gives you a change of pace!  Are you tempted to turn on the screens right when you wake up?  Go have a breakfast picnic at a park.  Do you use them in the afternoons?  Plan a fun outing to a children's play space, the library, or a Target trip instead.\n\n# 5. Stay Strong\n\nIt’s going to be tough.  Day 1 is the worst.  You will likely hear whining, tantrums, outbursts, begging, rude words, etc.  Don’t. give. in.  It WILL get better.  Screens have similar affects on our brains as drugs.  They are addicting.  This is the “withdrawal” period and you need to break the habit.  If you want to read more about it, I highly recommend the book Glow Kids by Dr. Nick Karadaras and Reset your Child’s Brain by Dr. Victoria Dunckley.",
+              "score": 0.4272061,
+              "raw_content": null
+            },
+            {
+              "url": "https://www.healthychildren.org/English/family-life/Media/Pages/screen-time-and-temper-tantrums-helpful-tips-for-parents.aspx",
+              "title": "Screen Time & Temper Tantrums: Helpful Tips for Parents",
+              "content": "Kids of all ages will have trouble putting digital devices down from time to time. Brain chemistry makes it hard for all humans to stop doing something they enjoy. Digital tech is designed to hold our attention, which can lead to resistance when it's time to stop.\n\nAdvance planning can prevent struggles, but it won't eliminate every meltdown. Responding calmly, showing understanding and holding your ground are all essential ways to support your child in the moment. Your support will help kids build healthy tech habits they'll need throughout life.\n\n## More information\n\n## About Dr. Radesky [...] ### Keep your cool.\n\nWhen kids have tantrums, parents need to avoid having one too. Though dealing with a screaming, sullen child is never easy, remind yourself to take a few deep breaths. Pausing before speaking or acting can help you maintain the calm you need to help your child.\n\n### Don't lecture.\n\nThis isn't the time to go over the rules, since a child in meltdown mode can't\nthink logically. Simply hold your ground, using as few words as possible: \"I know it's tough, but it's time to put your tablet away.\"\n\n### Let device settings be your helper. [...] |  |  |\n --- |\n| ✔ | Meltdowns that happen nearly every time your child is asked to stop scrolling, watching or playing—no matter how thoughtfully you manage the situation. |\n| ✔ | Changes in a child's sleep, hygiene, eating habits or social activities that seem related to excessive screen time. |\n| ✔ | Difficulty handling frustration or boredom without screens. (For example, they can't tolerate a short car trip or a few minutes waiting for a restaurant meal without demanding a tablet or phone.) |\n| ✔ | Withdrawing further and further into the virtual world, isolating themselves from friends and family to spend more time online. |\n\nMeltdowns that happen nearly every time your child is asked to stop scrolling, watching or playing—no matter how thoughtfully you manage the situation.",
+              "score": 0.3184009,
+              "raw_content": null
+            }
+          ],
+          "response_time": 2.35,
+          "request_id": "8a74a213-b184-477c-b4bc-55eec926d0e8"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Content Sumarizer": [
+      {
+        "json": {
+          "output": "{\n  \"research_summary\": \"Screen tantrums often result from children's dependency on digital devices which provide overstimulation and can alter brain chemistry. A practical solution is a screen-time reset lasting 3-7 days where all screens are removed to break the habit and allow the child’s brain to detox. This approach requires calm, firm, and patient enforcement by parents, distractions with alternative activities, and avoiding discussions before the reset to prevent meltdowns. Experts emphasize the importance of staying strong during the initial withdrawal phase, using device settings to assist limits, and replacing screen time with outdoor or creative activities to ease the transition.\",\n  \"key_insights\": [\n    \"Screens stimulate the brain similarly to addictive substances, causing difficulty in stopping use.\",\n    \"A 3-7 day screen-free reset can help break children’s screen dependency and improve behavior.\",\n    \"Advance planning helps reduce meltdowns but does not necessarily prevent them entirely.\",\n    \"Calm parental responses and minimal words during tantrums help manage the situation effectively.\",\n    \"Distraction with non-screen activities and outings reduces resistance when screens are taken away.\",\n    \"Not announcing the reset beforehand can prevent focus on losing screen access, which helps avoid meltdowns.\"\n  ],\n  \"statistics_or_facts\": [\n    \"Screens impact children's creativity, focus, sleep, and mood negatively when overused.\",\n    \"Meltdowns happen nearly every time children are asked to stop screen use if dependency is high.\",\n    \"Screen time changes brain chemistry making it similar to an addictive behavior.\"\n  ],\n  \"examples\": [\n    \"A parent removed screens without prior notice and redirected the child each time with coloring books and toys, resulting in reduced tantrums.\",\n    \"Experts recommend reading books like 'Reset Your Child’s Brain' by Dr. Victoria Dunckley and 'Glow Kids' by Dr. Nick Karadaras to understand screen addiction effects.\"\n  ],\n  \"practical_tips\": [\n    \"Remove all screens abruptly and avoid discussing the reset before starting to minimize focus on withdrawal.\",\n    \"Use calm and minimal language during tantrums, e.g., 'I know it’s tough, but it’s time to put your tablet away.'\",\n    \"Provide alternative engaging activities such as games, toys, or outdoor trips to distract from screen cravings.\",\n    \"Stay firm and consistent through the toughest initial days to help children adjust.\",\n    \"Leverage device settings to enforce time limits and control screen access.\",\n    \"Plan daily outings or activities to replace screen time and keep children engaged.\"\n  ]\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Script Writer": [
+      {
+        "json": {
+          "output": "{\n  \"scripts\": [\n    {\n      \"hook\": \"Tired of endless screen tantrums? Here’s a game-changing tactic.\",\n      \"problem\": \"Kids become hooked on screens because they overstimulate the brain like an addictive drug, making tantrums almost inevitable when you try to take them away.\",\n      \"insight\": \"A solid 3-7 day screen reset without any warnings can break this cycle and help your child’s brain detox from overstimulation.\",\n      \"example_or_proof\": \"One parent stopped screens cold turkey without telling their child first, and each time redirected them to coloring books or toys. This approach drastically reduced tantrums over a few days.\",\n      \"actionable_takeaway\": \"Remove all screens suddenly, keep your calm, use simple supportive language during meltdowns, and replace screen time with fun, non-digital activities and outdoor play.\",\n      \"cta\": \"Try this screen reset this week and watch your child’s mood and focus improve—share your experience below!\"\n    },\n    {\n      \"hook\": \"Could a screen detox be the secret to calmer kids? Experts say yes.\",\n      \"problem\": \"Screen time overstimulates children’s brains, changing their chemistry and leading to difficult behavior and tantrums when devices are taken away.\",\n      \"insight\": \"Experts recommend a 3-7 day screen-free reset to break this addictive pattern, but planning careful distractions is key.\",\n      \"example_or_proof\": \"Books like 'Reset Your Child’s Brain' highlight how abrupt screen removal combined with engaging activities helps kids adjust with fewer meltdowns.\",\n      \"actionable_takeaway\": \"Don’t announce the reset ahead of time, stay patient and calm during the withdrawal phase, and fill your child’s day with outdoor trips or creative games instead of screens.\",\n      \"cta\": \"Download a checklist to plan your screen detox and join parents supporting screen-free resets!\"\n    },\n    {\n      \"hook\": \"Screen tantrums ruining family harmony? Here’s what you haven’t tried.\",\n      \"problem\": \"When children rely heavily on screens, their brains get overstimulated and addicted, causing nearly guaranteed tantrums when trying to cut back.\",\n      \"insight\": \"Research shows a firm, calm 3-7 day screen reset without warning resets their brain’s chemistry and helps improve focus, sleep, and mood.\",\n      \"example_or_proof\": \"One parent’s strategy of silent calm enforcement plus quick redirection to toys led to fewer meltdowns and smoother transitions after screens were removed.\",\n      \"actionable_takeaway\": \"Implement limits using device settings, remove screens abruptly, distract with alternative activities, and prepare to stay consistent and patient through the toughest days.\",\n      \"cta\": \"Ready for a screen-free reset? Follow for more tips to manage screen addiction in kids!\"\n    }\n  ]\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Instagram Carousel agent": [
+      {
+        "json": {
+          "output": "{\n  \"carousel\": {\n    \"slide1\": \"Is Your Child Addicted to Screens?\",\n    \"slide2\": \"Too much screen time can harm your child's focus and emotional health.\",\n    \"slide3\": \"Kids' brains are still developing, making them vulnerable to digital addiction.\",\n    \"slide4\": \"Studies show that excessive screen use increases anxiety and attention problems.\",\n    \"slide5\": \"Set clear screen time limits to support your child's well-being.\",\n    \"slide6\": \"Start by creating tech-free zones or times, like during meals and before bed.\",\n    \"slide7\": \"Follow for more tips on balancing screen time and healthy parenting!\"\n  },\n  \"instagram_caption\": \"Worried your child spends too much time glued to screens? It’s more than just a habit—it's about protecting their growing minds and emotions. Excessive screen time can impact your child's focus, mood, and anxiety levels. But with simple boundaries, like tech-free zones and clear limits, you can help your child thrive both online and offline. Ready to take the first step? Swipe through for practical tips and follow us for more parenting advice! 💡👨‍👩‍👧‍👦 #ScreenTimeBalance #ParentingTips #HealthyKids\",\n  \"carousel_design_prompt\": \"Create a warm, approachable Instagram carousel in soft pastel colors (light blues, gentle greens, and warm yellows). Use clean, easy-to-read fonts and a spacious layout with each slide featuring one or two key sentences. Incorporate family-friendly illustrations of parents and children interacting with or without devices—show both screens and alternative activities. Design a comforting yet informative mood that appeals to concerned parents, with subtle icons like clocks, phones, and heart symbols to visually support the content.\"\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Threads post agent": [
+      {
+        "json": {
+          "output": "{\n  \"threads_post\": \"Screen time battles with your kid? You’re not alone. It’s tough seeing them glued to devices, but outright bans backfire. Instead, try setting clear boundaries *together* — a mix of no-phone zones and family tech time. Balance is key, not control freak mode. Parenting in the digital age isn’t about zero screens, it’s about smart screens. What's your go-to strategy to keep screens from taking over?\",\n  \"threads_cta\": \"Share your wins and fails with managing your kid’s screen time. What actually worked? Let’s swap tips and stories.\",\n  \"threads_visual_prompt\": \"A simple graphic showing a smartphone with a clock overlay, half of the screen shaded red (no screen zone) and the other half showing a family icon (family time), illustrating balanced screen use.\"\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Whop content agent": [
+      {
+        "json": {
+          "output": "{\n  \"whop_post\": \"Struggling with your child's screen time addiction? You're not alone, and there are practical steps you can take right now. Start by setting clear screen time limits and creating tech-free zones during meals and before bedtime. Engage your child in offline activities they enjoy to naturally reduce their urge to go online. Consistency and communication are key—explain why these changes matter for their health and well-being. Let's support each other in building healthier digital habits for our kids.\",\n  \"whop_caption\": \"Concerned about your child's screen time? Take control with clear limits, tech-free zones, and engaging offline activities. Consistency is key to breaking screen addiction. You're not alone—join us in creating healthier digital habits!\",\n  \"whop_video_prompt\": \"Concept: A straightforward guide showing parents practical ways to reduce their child's screen addiction. Scene 1: Parent setting a daily screen time limit on a tablet. Scene 2: Family eating dinner with phones put away. Scene 3: Child playing outside or engaging in a creative, offline activity. Angle: Empower parents with simple, actionable tips to regain control over their child's screen time.\",\n  \"whop_cta\": \"Join our community of parents tackling screen time addiction together. Share your challenges and successes, exchange tips, and get exclusive access to expert advice. Take the first step—commit to healthier habits for your child's future today!\"\n}"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Code in JavaScript3": [
+      {
+        "json": {
+          "threads_post": "Screen time battles with your kid? You’re not alone. It’s tough seeing them glued to devices, but outright bans backfire. Instead, try setting clear boundaries *together* — a mix of no-phone zones and family tech time. Balance is key, not control freak mode. Parenting in the digital age isn’t about zero screens, it’s about smart screens. What's your go-to strategy to keep screens from taking over?",
+          "threads_cta": "Share your wins and fails with managing your kid’s screen time. What actually worked? Let’s swap tips and stories.",
+          "threads_visual_prompt": "A simple graphic showing a smartphone with a clock overlay, half of the screen shaded red (no screen zone) and the other half showing a family icon (family time), illustrating balanced screen use."
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Code in JavaScript4": [
+      {
+        "json": {
+          "whop_post": "Struggling with your child's screen time addiction? You're not alone, and there are practical steps you can take right now. Start by setting clear screen time limits and creating tech-free zones during meals and before bedtime. Engage your child in offline activities they enjoy to naturally reduce their urge to go online. Consistency and communication are key—explain why these changes matter for their health and well-being. Let's support each other in building healthier digital habits for our kids.",
+          "whop_caption": "Concerned about your child's screen time? Take control with clear limits, tech-free zones, and engaging offline activities. Consistency is key to breaking screen addiction. You're not alone—join us in creating healthier digital habits!",
+          "whop_video_prompt": "Concept: A straightforward guide showing parents practical ways to reduce their child's screen addiction. Scene 1: Parent setting a daily screen time limit on a tablet. Scene 2: Family eating dinner with phones put away. Scene 3: Child playing outside or engaging in a creative, offline activity. Angle: Empower parents with simple, actionable tips to regain control over their child's screen time.",
+          "whop_cta": "Join our community of parents tackling screen time addiction together. Share your challenges and successes, exchange tips, and get exclusive access to expert advice. Take the first step—commit to healthier habits for your child's future today!"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Code in JavaScript2": [
+      {
+        "json": {
+          "carousel": {
+            "slide1": "Is Your Child Addicted to Screens?",
+            "slide2": "Too much screen time can harm your child's focus and emotional health.",
+            "slide3": "Kids' brains are still developing, making them vulnerable to digital addiction.",
+            "slide4": "Studies show that excessive screen use increases anxiety and attention problems.",
+            "slide5": "Set clear screen time limits to support your child's well-being.",
+            "slide6": "Start by creating tech-free zones or times, like during meals and before bed.",
+            "slide7": "Follow for more tips on balancing screen time and healthy parenting!"
+          },
+          "instagram_caption": "Worried your child spends too much time glued to screens? It’s more than just a habit—it's about protecting their growing minds and emotions. Excessive screen time can impact your child's focus, mood, and anxiety levels. But with simple boundaries, like tech-free zones and clear limits, you can help your child thrive both online and offline. Ready to take the first step? Swipe through for practical tips and follow us for more parenting advice! 💡👨‍👩‍👧‍👦 #ScreenTimeBalance #ParentingTips #HealthyKids",
+          "carousel_design_prompt": "Create a warm, approachable Instagram carousel in soft pastel colors (light blues, gentle greens, and warm yellows). Use clean, easy-to-read fonts and a spacious layout with each slide featuring one or two key sentences. Incorporate family-friendly illustrations of parents and children interacting with or without devices—show both screens and alternative activities. Design a comforting yet informative mood that appeals to concerned parents, with subtle icons like clocks, phones, and heart symbols to visually support the content."
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Content creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content creator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content creator": {
+      "main": [
+        [
+          {
+            "node": "hook creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "hook creator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "hook creator": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Content Sumarizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content Sumarizer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Script Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Sumarizer": {
+      "main": [
+        [
+          {
+            "node": "Script Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script Writer": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Instagram Carousel agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Threads post agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Whop content agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Instagram Carousel agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Threads post agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threads post agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Whop content agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Carousel agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whop content agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "27e21653-2ad0-4de0-8c82-365d66d9ec27",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "664a2037a0a7e61fdd5522f4f97694ac39ebddd8e39e7f0c407a1ef379117ba9"
+  },
+  "id": "cfqq1PYueo69R6qF",
+  "tags": []
+}
